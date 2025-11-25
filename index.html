@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Project02 - Memory Card Game</title>
+        <link rel="stylesheet" type="text/css" href="css/style.css">
+    </head>
+    <body>
+        <div class="header">
+            <h1 class="title">Memory Card Game</h1>
+            <div class="how-to-btn"><span>How-To Play</span></div>
+        </div>
+        <div class="info-container">
+            <p class="moves-p">Moves: </p><p class="moves moves-p">0</p>
+            <button class="restart">Restart</button>
+        </div>
+        <div class="how-to-container">
+            <div id="how-to-close" style="cursor: pointer;">
+                <span class="x-button">X</span>
+                <span class="close-label">Close</span>
+            </div>
+            <div id="how-to-info">
+                <h3>How-To Play</h3>
+                <p>1. Click on any card to reveal the picture under it.</p>
+                <p>2. Select a second card to see if the pictures match.</p>
+                <p>3. If the pictures do not match, the cards will turn red and flip back over. If they do match, they will turn green.</p>
+                <p>4. Continue flipping cards until all matches have been flipped over.</p>
+                <p>Test yourself and see how many moves you can win in!</p>
+            </div>
+        </div>
+        <div class="grid-container">
+            
+        </div>
+        <div class="win-container">
+            <div class="win-box">
+                <h2>Congratulations!</h2>
+                <p>You're a winner!</p>
+                <div class="moves-info">
+                    <p class="moves-p">Moves: </p><p class="final-moves moves-p"></p>
+                </div>
+                <button class="play-again">Play Again?</button>
+            </div>
+        </div>
+        <script src="js/jquery-3.7.1.min.js"></script>
+        <script type="text/javascript">
+            $(document).ready(function() {
+                const gridContainer = document.querySelector(".grid-container");
+                let cards = [];
+                let firstCard, secondCard;
+                let done = 0;
+                let moves = 0;
+                let media540 = window.matchMedia("(max-width: 540px)");
+                let counter = 1;
+
+                const url = 'https://api.thecatapi.com/v1/images/search?limit=10';
+                const api_key = 'live_0soXQyFHtDmQjc0wG3rQ8xeYfChIcsKCAuQn5zzLsrOxT73Kjs8O3hIVYdg8MJbA';
+
+                fetch(url, {headers: {'x-api-key': api_key}})
+                .then((response) =>  {
+                    return response.json();
+                })
+                .then((data) => {
+                    cards = [...data, ...data];
+                    shuffleCards();                
+                });
+
+                
+                //How To Function Information
+                $(".how-to-btn").click(function(e) {
+                    if (counter%2) {
+                        e.preventDefault();
+                    
+                        
+                        $(".how-to-container").css("display", "block")
+                        setTimeout(() => {
+                            $(".how-to-container").addClass("active");
+                        }, 200);
+                        setTimeout(() => {
+                            if (media540.matches) {
+                            $(".header").css("position", "fixed");
+                        }
+                        }, 400)
+                        
+                        counter++;
+                    } else {
+                        e.preventDefault();
+                        $(".how-to-container").removeClass("active");
+                        if (media540.matches) {
+                            $(".header").css("position", "relative");
+                        }
+                        setTimeout(() => {
+                            $(".how-to-container").css("display", "none")
+                        }, 200);
+                        counter++;
+                    }
+                    
+                    
+                });
+
+                $("#how-to-close").click(function(e) {
+                    e.preventDefault();
+                    $(".how-to-container").removeClass("active");
+                    if (media540.matches) {
+                        $(".header").css("position", "relative");
+                    }
+                    setTimeout(() => {
+                        $(".how-to-container").css("display", "none")
+                    }, 200);
+                    counter++;
+                });
+
+                //Restart Button
+                $(".restart").click(function() {
+                    restart();
+                })
+
+                $(".play-again").click(function() {
+                    restart();
+                })
+
+                //Shuffle function
+                function shuffleCards() {
+                    for (let i = 0; i < 20; i++) {
+                        var rand = Math.floor(Math.random() * (cards.length - 1));
+                        generateCard(cards[rand]);
+                        cards.splice(rand, 1);
+                    }
+                }
+
+                //Generate cards function
+                function generateCard(card) {
+                    const cardElement = document.createElement("div");
+                    cardElement.classList.add("card", "play");
+                    cardElement.setAttribute("data-id", card.id);
+                    cardElement.innerHTML = `<div class="front"><img class="frontImage" src="${card.url}" /></div><div class="back"></div>`;
+                    gridContainer.appendChild(cardElement);
+                    cardElement.addEventListener("click", function() {
+                        if (this.classList.contains("play")) {
+                            flipCard.call(this);
+                        }
+                    });
+                }
+
+                //Flip the cards function
+                function flipCard() {
+                    if (!firstCard) {
+                        firstCard = this;
+                        this.classList.add("flipped");
+                        console.log(firstCard);
+                        firstCard.classList.remove("play");
+                        return;
+                    } else if (!secondCard) {
+                        secondCard = this;
+                        this.classList.add("flipped");
+                        secondCard.classList.remove("play");
+                    } else {
+                        return;
+                    }
+                    
+                    checkForMatch();
+                }
+
+                //Checking for match
+                function checkForMatch() {
+                    if (firstCard.dataset.id === secondCard.dataset.id) {
+                        setTimeout(() => {
+                            firstCard.classList.add("match");
+                            secondCard.classList.add("match");
+                            firstCard = null;
+                            secondCard = null;
+                            moves++;
+                            document.querySelector(".moves").textContent = moves;
+                            done++;
+                            console.log("Done!");
+                            console.log(done);
+                            if (done === 10) {
+                                $(".win-container").css("display", "block");
+                                $(".win-container").css("background-color", "rgba(112, 112, 112, .4)");
+                                $(".win-container").css("z-index", "1001");
+                                document.querySelector(".final-moves").textContent = moves;
+                                $(".win-box").animate({
+                                    top: "+=100%"
+                                }, 1000);
+                            }
+                        }, 400);
+                        return;
+                    } else {
+                        setTimeout(() => {
+                            firstCard.classList.add("mismatch");
+                            secondCard.classList.add("mismatch");
+                        }, 400)
+                        setTimeout(() => {
+                            moves++;
+                            document.querySelector(".moves").textContent = moves;
+                            firstCard.classList.remove("flipped");
+                            secondCard.classList.remove("flipped");
+                            firstCard.classList.remove("mismatch");
+                            secondCard.classList.remove("mismatch");
+                            firstCard.classList.add("play");
+                            secondCard.classList.add("play");
+                            firstCard = null;
+                            secondCard = null;
+                        }, 1650);
+                        
+                        return;
+                    }
+                }
+
+                //Restart Function
+                function restart() {
+                    firstCard = "";
+                    secondCard = "";
+                    moves = 0;
+                    done = 0;
+                    document.querySelector(".moves").textContent = moves;
+                    gridContainer.innerHTML = "";
+                    cards= [];
+
+                    $(".win-box").addClass("spin-out");
+
+                    setTimeout(() => {
+                        $(".win-container").css("display", "none");
+                        $(".win-container").css("background-color", "none");
+                        $(".win-container").css("z-index", "-100");
+                        $(".win-box").css({
+                            top: "-50%"
+                        });
+                        $(".win-box").removeClass("spin-out");
+                    }, 500)
+                    
+                    
+                    fetch(url, {headers: {'x-api-key': api_key}})
+                    .then((response) =>  {
+                        return response.json();
+                    })
+                    .then((data) => {
+                        cards = [...data, ...data];
+                        shuffleCards();
+                    });
+                }
+            })
+        </script>
+    </body>
+</html>
